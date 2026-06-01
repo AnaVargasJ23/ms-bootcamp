@@ -11,6 +11,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
@@ -256,5 +257,42 @@ class BootcampUseCaseTest {
                 .verifyComplete();
     }
 
+    @Test
+    void eliminar_exitoso() {
+        Bootcamp bootcamp = new Bootcamp(1L, "Bootcamp Java", "Desc",
+                LocalDate.now(), 90,
+                List.of(new Capacidad(3L, "Backend", null)));
+        when(persistencePort.buscarPorId(1L)).thenReturn(Mono.just(bootcamp));
+        when(persistencePort.obtenerCapacidadesDeOtrosBootcamps(1L, List.of(3L)))
+                .thenReturn(Flux.empty());
+        when(persistencePort.eliminar(1L)).thenReturn(Mono.empty());
+        when(capacidadServicePort.eliminarCapacidad(3L)).thenReturn(Mono.empty());
+
+        StepVerifier.create(useCase.eliminar(1L))
+                .verifyComplete();
+    }
+
+    @Test
+    void eliminar_bootcampNoExiste_lanzaError() {
+        when(persistencePort.buscarPorId(999L)).thenReturn(Mono.empty());
+
+        StepVerifier.create(useCase.eliminar(999L))
+                .expectError(BootcampException.class)
+                .verify();
+    }
+
+    @Test
+    void eliminar_capacidadEnOtrosBootcamps_noElimina() {
+        Bootcamp bootcamp = new Bootcamp(1L, "Bootcamp Java", "Desc",
+                LocalDate.now(), 90,
+                List.of(new Capacidad(3L, "Backend", null)));
+        when(persistencePort.buscarPorId(1L)).thenReturn(Mono.just(bootcamp));
+        when(persistencePort.obtenerCapacidadesDeOtrosBootcamps(1L, List.of(3L)))
+                .thenReturn(Flux.just(3L));
+        when(persistencePort.eliminar(1L)).thenReturn(Mono.empty());
+
+        StepVerifier.create(useCase.eliminar(1L))
+                .verifyComplete();
+    }
 
 }

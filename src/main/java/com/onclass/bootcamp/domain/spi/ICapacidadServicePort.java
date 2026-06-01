@@ -6,4 +6,5 @@ import reactor.core.publisher.Mono;
 public interface ICapacidadServicePort {
     Mono<Boolean> existeCapacidad(Long id);
     Mono<Capacidad> obtenerCapacidad(Long id);
+    Mono<Void> eliminarCapacidad(Long id);
 }

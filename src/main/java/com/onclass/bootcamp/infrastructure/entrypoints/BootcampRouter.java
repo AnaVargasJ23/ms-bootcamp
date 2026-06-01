@@ -64,12 +64,36 @@ public class BootcampRouter {
                                     @ApiResponse(responseCode = "200", description = "Lista paginada de bootcamps")
                             }
                     )
+            ),
+            @RouterOperation(
+                    path = "/api/v1/bootcamps/{id}",
+                    method = RequestMethod.DELETE,
+                    beanClass = BootcampHandler.class,
+                    beanMethod = "eliminar",
+                    operation = @Operation(
+                            operationId = "eliminarBootcamp",
+                            summary = "Eliminar bootcamp (Requiere rol ADMIN)",
+                            tags = {"Bootcamp"},
+                            parameters = {
+                                    @io.swagger.v3.oas.annotations.Parameter(
+                                            name = "id",
+                                            in = io.swagger.v3.oas.annotations.enums.ParameterIn.PATH,
+                                            required = true,
+                                            description = "ID del bootcamp a eliminar"
+                                    )
+                            },
+                            responses = {
+                                    @ApiResponse(responseCode = "204", description = "Bootcamp eliminado exitosamente"),
+                                    @ApiResponse(responseCode = "404", description = "Bootcamp no encontrado")
+                            }
+                    )
             )
     })
     public RouterFunction<ServerResponse> bootcampRoutes(BootcampHandler handler) {
         return RouterFunctions.route()
                 .POST("/api/v1/bootcamps", handler::registrar)
                 .GET("/api/v1/bootcamps/paginado", handler::listarPaginado)
+                .DELETE("/api/v1/bootcamps/{id}", handler::eliminar)
                 .build();
     }
 }

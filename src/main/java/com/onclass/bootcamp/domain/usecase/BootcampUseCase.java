@@ -16,9 +16,12 @@ import reactor.core.publisher.Mono;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.logging.Logger;
 
 @RequiredArgsConstructor
 public class BootcampUseCase implements IBootcampServicePort {
+
+    private static final Logger log = Logger.getLogger(BootcampUseCase.class.getName());
 
     private final IBootcampPersistencePort persistencePort;
     private final ICapacidadServicePort capacidadServicePort;
@@ -56,6 +59,34 @@ public class BootcampUseCase implements IBootcampServicePort {
                         )));
     }
 
+    @Override
+    public Mono<Void> eliminar(Long id) {
+        return persistencePort.buscarPorId(id)
+                .switchIfEmpty(Mono.error(new BootcampException(
+                        BootcampErrorEnum.BOOTCAMP_NO_ENCONTRADO.getCode(),
+                        BootcampErrorEnum.BOOTCAMP_NO_ENCONTRADO.getMessage())))
+                .flatMap(bootcamp -> {
+                    List<Long> capacidadIds = bootcamp.getCapacidades()
+                            .stream()
+                            .map(Capacidad::getId)
+                            .toList();
+                    log.info("Capacidades del bootcamp " + id + ": " + capacidadIds);
+                    return persistencePort.obtenerCapacidadesDeOtrosBootcamps(id, capacidadIds)
+                            .collectList()
+                            .flatMap(capacidadesEnOtros -> {
+                                log.info("Capacidades en otros bootcamps: " + capacidadesEnOtros);
+                                List<Long> capacidadesAEliminar = capacidadIds.stream()
+                                        .filter(capId -> !capacidadesEnOtros.contains(capId))
+                                        .toList();
+                                log.info("Capacidades a eliminar: " + capacidadesAEliminar);
+                                return persistencePort.eliminar(id)
+                                        .then(Flux.fromIterable(capacidadesAEliminar)
+                                                .flatMap(capacidadServicePort::eliminarCapacidad)
+                                                .then());
+                            });
+                });
+    }
+
     private Mono<List<Bootcamp>> enriquecerBootcamps(List<Bootcamp> bootcamps) {
         return Flux.fromIterable(bootcamps)
                 .concatMap(this::enriquecerCapacidades)
@@ -74,53 +105,33 @@ public class BootcampUseCase implements IBootcampServicePort {
 
     private void validar(Bootcamp bootcamp) {
         if (bootcamp.getNombre() == null || bootcamp.getNombre().isBlank()) {
-            throw new BootcampException(
-                    BootcampErrorEnum.NOMBRE_OBLIGATORIO.getCode(),
-                    BootcampErrorEnum.NOMBRE_OBLIGATORIO.getMessage());
+            throw new BootcampException(BootcampErrorEnum.NOMBRE_OBLIGATORIO.getCode(), BootcampErrorEnum.NOMBRE_OBLIGATORIO.getMessage());
         }
         if (bootcamp.getNombre().length() > BootcampConstants.NOMBRE_MAX_LENGTH) {
-            throw new BootcampException(
-                    BootcampErrorEnum.NOMBRE_MAX_50.getCode(),
-                    BootcampErrorEnum.NOMBRE_MAX_50.getMessage());
+            throw new BootcampException(BootcampErrorEnum.NOMBRE_MAX_50.getCode(), BootcampErrorEnum.NOMBRE_MAX_50.getMessage());
         }
         if (bootcamp.getDescripcion() == null || bootcamp.getDescripcion().isBlank()) {
-            throw new BootcampException(
-                    BootcampErrorEnum.DESCRIPCION_OBLIGATORIA.getCode(),
-                    BootcampErrorEnum.DESCRIPCION_OBLIGATORIA.getMessage());
+            throw new BootcampException(BootcampErrorEnum.DESCRIPCION_OBLIGATORIA.getCode(), BootcampErrorEnum.DESCRIPCION_OBLIGATORIA.getMessage());
         }
         if (bootcamp.getDescripcion().length() > BootcampConstants.DESCRIPCION_MAX_LENGTH) {
-            throw new BootcampException(
-                    BootcampErrorEnum.DESCRIPCION_MAX_90.getCode(),
-                    BootcampErrorEnum.DESCRIPCION_MAX_90.getMessage());
+            throw new BootcampException(BootcampErrorEnum.DESCRIPCION_MAX_90.getCode(), BootcampErrorEnum.DESCRIPCION_MAX_90.getMessage());
         }
         if (bootcamp.getFechaLanzamiento() == null) {
-            throw new BootcampException(
-                    BootcampErrorEnum.FECHA_OBLIGATORIA.getCode(),
-                    BootcampErrorEnum.FECHA_OBLIGATORIA.getMessage());
+            throw new BootcampException(BootcampErrorEnum.FECHA_OBLIGATORIA.getCode(), BootcampErrorEnum.FECHA_OBLIGATORIA.getMessage());
         }
         if (bootcamp.getDuracion() == null) {
-            throw new BootcampException(
-                    BootcampErrorEnum.DURACION_OBLIGATORIA.getCode(),
-                    BootcampErrorEnum.DURACION_OBLIGATORIA.getMessage());
+            throw new BootcampException(BootcampErrorEnum.DURACION_OBLIGATORIA.getCode(), BootcampErrorEnum.DURACION_OBLIGATORIA.getMessage());
         }
-        if (bootcamp.getCapacidades() == null
-                || bootcamp.getCapacidades().size() < BootcampConstants.CAPACIDADES_MIN) {
-            throw new BootcampException(
-                    BootcampErrorEnum.CAPACIDADES_MIN_1.getCode(),
-                    BootcampErrorEnum.CAPACIDADES_MIN_1.getMessage());
+        if (bootcamp.getCapacidades() == null || bootcamp.getCapacidades().size() < BootcampConstants.CAPACIDADES_MIN) {
+            throw new BootcampException(BootcampErrorEnum.CAPACIDADES_MIN_1.getCode(), BootcampErrorEnum.CAPACIDADES_MIN_1.getMessage());
         }
         if (bootcamp.getCapacidades().size() > BootcampConstants.CAPACIDADES_MAX) {
-            throw new BootcampException(
-                    BootcampErrorEnum.CAPACIDADES_MAX_4.getCode(),
-                    BootcampErrorEnum.CAPACIDADES_MAX_4.getMessage());
+            throw new BootcampException(BootcampErrorEnum.CAPACIDADES_MAX_4.getCode(), BootcampErrorEnum.CAPACIDADES_MAX_4.getMessage());
         }
-        List<Long> ids = bootcamp.getCapacidades().stream()
-                .map(Capacidad::getId).toList();
+        List<Long> ids = bootcamp.getCapacidades().stream().map(Capacidad::getId).toList();
         Set<Long> idsUnicos = new HashSet<>(ids);
         if (idsUnicos.size() != ids.size()) {
-            throw new BootcampException(
-                    BootcampErrorEnum.CAPACIDADES_REPETIDAS.getCode(),
-                    BootcampErrorEnum.CAPACIDADES_REPETIDAS.getMessage());
+            throw new BootcampException(BootcampErrorEnum.CAPACIDADES_REPETIDAS.getCode(), BootcampErrorEnum.CAPACIDADES_REPETIDAS.getMessage());
         }
     }
 
