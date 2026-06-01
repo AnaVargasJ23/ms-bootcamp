@@ -17,7 +17,8 @@ public enum BootcampErrorEnum {
     CAPACIDAD_NO_EXISTE("BOOT-008", "Una o más capacidades no existen"),
     NOMBRE_DUPLICADO("BOOT-009", "Ya existe un bootcamp con ese nombre"),
     FECHA_OBLIGATORIA("BOOT-010", "La fecha de lanzamiento es obligatoria"),
-    DURACION_OBLIGATORIA("BOOT-011", "La duración es obligatoria");
+    DURACION_OBLIGATORIA("BOOT-011", "La duración es obligatoria"),
+    BOOTCAMP_NO_ENCONTRADO("BOOT-012", "El bootcamp no existe");
 
     private final String code;
     private final String message;

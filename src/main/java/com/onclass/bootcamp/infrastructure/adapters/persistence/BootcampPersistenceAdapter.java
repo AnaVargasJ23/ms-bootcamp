@@ -11,10 +11,12 @@ import com.onclass.bootcamp.infrastructure.adapters.persistence.repository.Bootc
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.Comparator;
 import java.util.List;
+
 
 @Component
 @RequiredArgsConstructor
@@ -84,4 +86,36 @@ public class BootcampPersistenceAdapter implements IBootcampPersistencePort {
         }
         return comparator;
     }
+    @Override
+    public Mono<Bootcamp> buscarPorId(Long id) {
+        return bootcampRepository.findById(id)
+                .flatMap(entity ->
+                        bootcampCapacidadRepository.findByBootcampId(entity.getId())
+                                .map(rel -> new Capacidad(rel.getCapacidadId(), null, null))
+                                .collectList()
+                                .map(capacidades -> {
+                                    Bootcamp b = bootcampEntityMapper.toDomain(entity);
+                                    b.setCapacidades(capacidades);
+                                    return b;
+                                })
+                );
+    }
+
+    @Override
+    @Transactional
+    public Mono<Void> eliminar(Long id) {
+        return bootcampCapacidadRepository.deleteByBootcampId(id)
+                .then(bootcampRepository.deleteById(id));
+    }
+
+    @Override
+    public Flux<Long> obtenerCapacidadesDeOtrosBootcamps(Long bootcampId, List<Long> capacidadIds) {
+        return bootcampCapacidadRepository.findAll()
+                .filter(rel -> !rel.getBootcampId().equals(bootcampId)
+                        && capacidadIds.contains(rel.getCapacidadId()))
+                .map(BootcampCapacidadEntity::getCapacidadId)
+                .distinct();
+    }
+
+
 }

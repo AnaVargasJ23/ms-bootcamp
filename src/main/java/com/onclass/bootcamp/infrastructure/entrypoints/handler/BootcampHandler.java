@@ -76,4 +76,23 @@ public class BootcampHandler {
                                 .message(e.getMessage())
                                 .build()));
     }
+
+    public Mono<ServerResponse> eliminar(ServerRequest request) {
+        Long id = Long.valueOf(request.pathVariable("id"));
+        return bootcampServicePort.eliminar(id)
+                .then(ServerResponse.ok()
+                        .bodyValue(ErrorDTO.builder()
+                                .code("BOOT-200")
+                                .message("Bootcamp eliminado exitosamente")
+                                .build()))
+                .onErrorResume(BootcampException.class, e -> {
+                    log.error("Error de negocio: {}", e.getMessage());
+                    return ServerResponse
+                            .status(HttpStatus.NOT_FOUND)
+                            .bodyValue(ErrorDTO.builder()
+                                    .code(e.getCode())
+                                    .message(e.getMessage())
+                                    .build());
+                });
+    }
 }

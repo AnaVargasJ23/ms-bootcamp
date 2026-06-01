@@ -42,4 +42,20 @@ public class CapacidadHttpAdapter implements ICapacidadServicePort {
                     return Mono.just(new Capacidad(id, null, null));
                 });
     }
+
+    @Override
+    public Mono<Void> eliminarCapacidad(Long id) {
+        log.info("Eliminando capacidad con id: {}", id);
+        return webClient.delete()
+                .uri(BootcampConstants.CAPACIDAD_BASE_URL +
+                        BootcampConstants.CAPACIDAD_BUSCAR_ENDPOINT, id)
+                .retrieve()
+                .toBodilessEntity()
+                .doOnSuccess(r -> log.info("Capacidad {} eliminada, status: {}", id, r.getStatusCode()))
+                .then()
+                .onErrorResume(e -> {
+                    log.error("Error eliminando capacidad {}: {}", id, e.getMessage());
+                    return Mono.empty();
+                });
+    }
 }
