@@ -44,11 +44,32 @@ public class BootcampRouter {
                                     @ApiResponse(responseCode = "400", description = "Datos inválidos o reglas de negocio violadas")
                             }
                     )
+            ),
+            @RouterOperation(
+                    path = "/api/v1/bootcamps/paginado",
+                    method = RequestMethod.GET,
+                    beanClass = BootcampHandler.class,
+                    beanMethod = "listarPaginado",
+                    operation = @Operation(
+                            operationId = "listarBootcampsPaginado",
+                            summary = "Listar bootcamps paginados y ordenados (Requiere rol ADMIN)",
+                            tags = {"Bootcamp"},
+                            parameters = {
+                                    @io.swagger.v3.oas.annotations.Parameter(name = "page", in = io.swagger.v3.oas.annotations.enums.ParameterIn.QUERY, description = "Número de página (default 0)"),
+                                    @io.swagger.v3.oas.annotations.Parameter(name = "size", in = io.swagger.v3.oas.annotations.enums.ParameterIn.QUERY, description = "Tamaño de página (default 10)"),
+                                    @io.swagger.v3.oas.annotations.Parameter(name = "ordenarPor", in = io.swagger.v3.oas.annotations.enums.ParameterIn.QUERY, description = "Campo: nombre o cantidadCapacidades"),
+                                    @io.swagger.v3.oas.annotations.Parameter(name = "direccion", in = io.swagger.v3.oas.annotations.enums.ParameterIn.QUERY, description = "Dirección: asc o desc")
+                            },
+                            responses = {
+                                    @ApiResponse(responseCode = "200", description = "Lista paginada de bootcamps")
+                            }
+                    )
             )
     })
     public RouterFunction<ServerResponse> bootcampRoutes(BootcampHandler handler) {
         return RouterFunctions.route()
                 .POST("/api/v1/bootcamps", handler::registrar)
+                .GET("/api/v1/bootcamps/paginado", handler::listarPaginado)
                 .build();
     }
 }

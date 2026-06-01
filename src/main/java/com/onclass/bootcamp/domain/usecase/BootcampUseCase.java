@@ -5,6 +5,7 @@ import com.onclass.bootcamp.domain.constants.BootcampConstants;
 import com.onclass.bootcamp.domain.enums.BootcampErrorEnum;
 import com.onclass.bootcamp.domain.excepcion.BootcampException;
 import com.onclass.bootcamp.domain.model.Bootcamp;
+import com.onclass.bootcamp.domain.model.BootcampPage;
 import com.onclass.bootcamp.domain.model.Capacidad;
 import com.onclass.bootcamp.domain.spi.IBootcampPersistencePort;
 import com.onclass.bootcamp.domain.spi.ICapacidadServicePort;
@@ -38,6 +39,36 @@ public class BootcampUseCase implements IBootcampServicePort {
                                 BootcampErrorEnum.NOMBRE_DUPLICADO.getMessage()));
                     }
                     return persistencePort.guardar(bootcamp);
+                });
+    }
+
+    @Override
+    public Mono<BootcampPage> listarPaginado(int pagina, int tamanio, String ordenarPor, String direccion) {
+        String ordenValido = (ordenarPor == null || ordenarPor.isBlank()) ? "nombre" : ordenarPor;
+        String direccionValida = (direccion == null || direccion.isBlank()) ? "asc" : direccion;
+        return persistencePort.listarPaginado(pagina, tamanio, ordenValido, direccionValida)
+                .flatMap(page -> enriquecerBootcamps(page.getBootcamps())
+                        .map(bootcamps -> new BootcampPage(
+                                bootcamps,
+                                page.getPaginaActual(),
+                                page.getTotalPaginas(),
+                                page.getTotalElementos()
+                        )));
+    }
+
+    private Mono<List<Bootcamp>> enriquecerBootcamps(List<Bootcamp> bootcamps) {
+        return Flux.fromIterable(bootcamps)
+                .concatMap(this::enriquecerCapacidades)
+                .collectList();
+    }
+
+    private Mono<Bootcamp> enriquecerCapacidades(Bootcamp bootcamp) {
+        return Flux.fromIterable(bootcamp.getCapacidades())
+                .concatMap(c -> capacidadServicePort.obtenerCapacidad(c.getId()))
+                .collectList()
+                .map(capacidades -> {
+                    bootcamp.setCapacidades(capacidades);
+                    return bootcamp;
                 });
     }
 

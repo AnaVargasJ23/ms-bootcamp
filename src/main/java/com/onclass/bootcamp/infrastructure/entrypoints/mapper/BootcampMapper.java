@@ -2,10 +2,12 @@ package com.onclass.bootcamp.infrastructure.entrypoints.mapper;
 
 import com.onclass.bootcamp.domain.model.Bootcamp;
 import com.onclass.bootcamp.domain.model.Capacidad;
+import com.onclass.bootcamp.domain.model.Tecnologia;
 import com.onclass.bootcamp.infrastructure.entrypoints.dto.BootcampRequest;
 import com.onclass.bootcamp.infrastructure.entrypoints.dto.BootcampResponse;
 import com.onclass.bootcamp.infrastructure.entrypoints.dto.CapacidadIdRequest;
 import com.onclass.bootcamp.infrastructure.entrypoints.dto.CapacidadResponse;
+import com.onclass.bootcamp.infrastructure.entrypoints.dto.TecnologiaResponse;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
@@ -20,4 +22,6 @@ public interface BootcampMapper {
     BootcampResponse toResponse(Bootcamp bootcamp);
 
     CapacidadResponse toResponse(Capacidad capacidad);
+
+    TecnologiaResponse toResponse(Tecnologia tecnologia);
 }

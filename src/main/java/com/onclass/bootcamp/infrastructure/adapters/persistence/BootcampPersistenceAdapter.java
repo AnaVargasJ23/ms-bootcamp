@@ -1,6 +1,7 @@
 package com.onclass.bootcamp.infrastructure.adapters.persistence;
 
 import com.onclass.bootcamp.domain.model.Bootcamp;
+import com.onclass.bootcamp.domain.model.BootcampPage;
 import com.onclass.bootcamp.domain.model.Capacidad;
 import com.onclass.bootcamp.domain.spi.IBootcampPersistencePort;
 import com.onclass.bootcamp.infrastructure.adapters.persistence.entity.BootcampCapacidadEntity;
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Mono;
 
+import java.util.Comparator;
 import java.util.List;
 
 @Component
@@ -43,5 +45,43 @@ public class BootcampPersistenceAdapter implements IBootcampPersistencePort {
     @Override
     public Mono<Boolean> existePorNombre(String nombre) {
         return bootcampRepository.existsByNombre(nombre);
+    }
+
+    @Override
+    public Mono<BootcampPage> listarPaginado(int pagina, int tamanio, String ordenarPor, String direccion) {
+        int offset = pagina * tamanio;
+        return bootcampRepository.count()
+                .flatMap(total -> {
+                    int totalPaginas = (int) Math.ceil((double) total / tamanio);
+                    return bootcampRepository.findAll()
+                            .flatMap(entity ->
+                                    bootcampCapacidadRepository.findByBootcampId(entity.getId())
+                                            .map(rel -> new Capacidad(rel.getCapacidadId(), null, null))
+                                            .collectList()
+                                            .map(capacidades -> {
+                                                Bootcamp b = bootcampEntityMapper.toDomain(entity);
+                                                b.setCapacidades(capacidades);
+                                                return b;
+                                            })
+                            )
+                            .sort(getComparator(ordenarPor, direccion))
+                            .skip(offset)
+                            .take(tamanio)
+                            .collectList()
+                            .map(bootcamps -> new BootcampPage(bootcamps, pagina, totalPaginas, total));
+                });
+    }
+
+    private Comparator<Bootcamp> getComparator(String ordenarPor, String direccion) {
+        Comparator<Bootcamp> comparator;
+        if ("cantidadCapacidades".equalsIgnoreCase(ordenarPor)) {
+            comparator = Comparator.comparingInt(b -> b.getCapacidades().size());
+        } else {
+            comparator = Comparator.comparing(b -> b.getNombre().toLowerCase());
+        }
+        if ("desc".equalsIgnoreCase(direccion)) {
+            comparator = comparator.reversed();
+        }
+        return comparator;
     }
 }

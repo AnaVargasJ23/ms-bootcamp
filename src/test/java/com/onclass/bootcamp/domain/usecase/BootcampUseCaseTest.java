@@ -2,6 +2,7 @@ package com.onclass.bootcamp.domain.usecase;
 
 import com.onclass.bootcamp.domain.excepcion.BootcampException;
 import com.onclass.bootcamp.domain.model.Bootcamp;
+import com.onclass.bootcamp.domain.model.BootcampPage;
 import com.onclass.bootcamp.domain.model.Capacidad;
 import com.onclass.bootcamp.domain.spi.IBootcampPersistencePort;
 import com.onclass.bootcamp.domain.spi.ICapacidadServicePort;
@@ -34,8 +35,8 @@ class BootcampUseCaseTest {
 
     private List<Capacidad> capacidadesValidas() {
         return List.of(
-                new Capacidad(3L, "Backend Developer"),
-                new Capacidad(4L, "Frontend Developer")
+                new Capacidad(3L, "Backend Developer", null),
+                new Capacidad(4L, "Frontend Developer", null)
         );
     }
 
@@ -151,11 +152,11 @@ class BootcampUseCaseTest {
     @Test
     void registrar_masde4Capacidades_lanzaError() {
         List<Capacidad> capacidades = List.of(
-                new Capacidad(1L, "Cap1"),
-                new Capacidad(2L, "Cap2"),
-                new Capacidad(3L, "Cap3"),
-                new Capacidad(4L, "Cap4"),
-                new Capacidad(5L, "Cap5")
+                new Capacidad(1L, "Cap1", null),
+                new Capacidad(2L, "Cap2", null),
+                new Capacidad(3L, "Cap3", null),
+                new Capacidad(4L, "Cap4", null),
+                new Capacidad(5L, "Cap5", null)
         );
         Bootcamp bootcamp = new Bootcamp(null, "Bootcamp", "Descripción",
                 LocalDate.now(), 90, capacidades);
@@ -168,8 +169,8 @@ class BootcampUseCaseTest {
     @Test
     void registrar_capacidadesRepetidas_lanzaError() {
         List<Capacidad> capacidades = List.of(
-                new Capacidad(3L, "Backend"),
-                new Capacidad(3L, "Backend")
+                new Capacidad(3L, "Backend", null),
+                new Capacidad(3L, "Backend", null)
         );
         Bootcamp bootcamp = new Bootcamp(null, "Bootcamp", "Descripción",
                 LocalDate.now(), 90, capacidades);
@@ -199,4 +200,61 @@ class BootcampUseCaseTest {
                 .expectError(BootcampException.class)
                 .verify();
     }
+
+
+    @Test
+    void listarPaginado_exitoso() {
+        List<Bootcamp> bootcamps = List.of(
+                new Bootcamp(1L, "Bootcamp Java", "Desc", LocalDate.now(), 90,
+                        List.of(new Capacidad(3L, "Backend", null)))
+        );
+        BootcampPage page = new BootcampPage(bootcamps, 0, 1, 1L);
+
+        when(persistencePort.listarPaginado(0, 10, "nombre", "asc"))
+                .thenReturn(Mono.just(page));
+        when(capacidadServicePort.obtenerCapacidad(anyLong()))
+                .thenReturn(Mono.just(new Capacidad(3L, "Backend Developer", null)));
+
+        StepVerifier.create(useCase.listarPaginado(0, 10, "nombre", "asc"))
+                .expectNextMatches(p -> p.getTotalElementos() == 1L)
+                .verifyComplete();
+    }
+
+    @Test
+    void listarPaginado_parametrosNulos_usaDefecto() {
+        List<Bootcamp> bootcamps = List.of(
+                new Bootcamp(1L, "Bootcamp Java", "Desc", LocalDate.now(), 90,
+                        List.of(new Capacidad(3L, "Backend", null)))
+        );
+        BootcampPage page = new BootcampPage(bootcamps, 0, 1, 1L);
+
+        when(persistencePort.listarPaginado(0, 10, "nombre", "asc"))
+                .thenReturn(Mono.just(page));
+        when(capacidadServicePort.obtenerCapacidad(anyLong()))
+                .thenReturn(Mono.just(new Capacidad(3L, "Backend Developer", null)));
+
+        StepVerifier.create(useCase.listarPaginado(0, 10, null, null))
+                .expectNextMatches(p -> p.getTotalElementos() == 1L)
+                .verifyComplete();
+    }
+
+    @Test
+    void listarPaginado_conParametrosValidos() {
+        List<Bootcamp> bootcamps = List.of(
+                new Bootcamp(1L, "Bootcamp Java", "Desc", LocalDate.now(), 90,
+                        List.of(new Capacidad(3L, "Backend", null)))
+        );
+        BootcampPage page = new BootcampPage(bootcamps, 0, 1, 1L);
+
+        when(persistencePort.listarPaginado(0, 10, "cantidadCapacidades", "desc"))
+                .thenReturn(Mono.just(page));
+        when(capacidadServicePort.obtenerCapacidad(anyLong()))
+                .thenReturn(Mono.just(new Capacidad(3L, "Backend Developer", null)));
+
+        StepVerifier.create(useCase.listarPaginado(0, 10, "cantidadCapacidades", "desc"))
+                .expectNextMatches(p -> p.getTotalElementos() == 1L)
+                .verifyComplete();
+    }
+
+
 }
