@@ -11,8 +11,9 @@ import java.util.List;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class CapacidadResponse {
-    private Long id;
-    private String nombre;
-    private List<TecnologiaResponse> tecnologias;
+public class BootcampPageResponse {
+    private List<BootcampResponse> bootcamps;
+    private int paginaActual;
+    private int totalPaginas;
+    private long totalElementos;
 }

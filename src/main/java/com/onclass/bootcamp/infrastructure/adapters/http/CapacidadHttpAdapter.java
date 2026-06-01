@@ -1,6 +1,7 @@
 package com.onclass.bootcamp.infrastructure.adapters.http;
 
 import com.onclass.bootcamp.domain.constants.BootcampConstants;
+import com.onclass.bootcamp.domain.model.Capacidad;
 import com.onclass.bootcamp.domain.spi.ICapacidadServicePort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,6 +27,19 @@ public class CapacidadHttpAdapter implements ICapacidadServicePort {
                 .onErrorResume(e -> {
                     log.error("Error verificando capacidad {}: {}", id, e.getMessage());
                     return Mono.just(false);
+                });
+    }
+
+    @Override
+    public Mono<Capacidad> obtenerCapacidad(Long id) {
+        return webClient.get()
+                .uri(BootcampConstants.CAPACIDAD_BASE_URL +
+                        BootcampConstants.CAPACIDAD_BUSCAR_ENDPOINT, id)
+                .retrieve()
+                .bodyToMono(Capacidad.class)
+                .onErrorResume(e -> {
+                    log.error("Error obteniendo capacidad {}: {}", id, e.getMessage());
+                    return Mono.just(new Capacidad(id, null, null));
                 });
     }
 }
