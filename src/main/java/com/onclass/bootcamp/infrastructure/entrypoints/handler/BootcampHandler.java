@@ -95,4 +95,11 @@ public class BootcampHandler {
                                     .build());
                 });
     }
+
+    public Mono<ServerResponse> buscarPorId(ServerRequest request) {
+        Long id = Long.valueOf(request.pathVariable("id"));
+        return bootcampServicePort.buscarPorId(id)
+                .flatMap(b -> ServerResponse.ok().bodyValue(bootcampMapper.toResponse(b)))
+                .switchIfEmpty(ServerResponse.notFound().build());
+    }
 }

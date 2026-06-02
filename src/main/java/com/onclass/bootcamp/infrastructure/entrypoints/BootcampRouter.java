@@ -87,6 +87,29 @@ public class BootcampRouter {
                                     @ApiResponse(responseCode = "404", description = "Bootcamp no encontrado")
                             }
                     )
+            ),
+            @RouterOperation(
+                    path = "/api/v1/bootcamps/{id}",
+                    method = RequestMethod.GET,
+                    beanClass = BootcampHandler.class,
+                    beanMethod = "buscarPorId",
+                    operation = @Operation(
+                            operationId = "buscarBootcampPorId",
+                            summary = "Buscar bootcamp por ID",
+                            tags = {"Bootcamp"},
+                            parameters = {
+                                    @io.swagger.v3.oas.annotations.Parameter(
+                                            name = "id",
+                                            in = io.swagger.v3.oas.annotations.enums.ParameterIn.PATH,
+                                            required = true,
+                                            description = "ID del bootcamp"
+                                    )
+                            },
+                            responses = {
+                                    @ApiResponse(responseCode = "200", description = "Bootcamp encontrado"),
+                                    @ApiResponse(responseCode = "404", description = "Bootcamp no encontrado")
+                            }
+                    )
             )
     })
     public RouterFunction<ServerResponse> bootcampRoutes(BootcampHandler handler) {
@@ -94,6 +117,7 @@ public class BootcampRouter {
                 .POST("/api/v1/bootcamps", handler::registrar)
                 .GET("/api/v1/bootcamps/paginado", handler::listarPaginado)
                 .DELETE("/api/v1/bootcamps/{id}", handler::eliminar)
+                .GET("/api/v1/bootcamps/{id}", handler::buscarPorId)
                 .build();
     }
 }

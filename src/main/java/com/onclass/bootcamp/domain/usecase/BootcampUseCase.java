@@ -148,4 +148,9 @@ public class BootcampUseCase implements IBootcampServicePort {
                         }))
                 .all(Boolean::booleanValue);
     }
+
+    @Override
+    public Mono<Bootcamp> buscarPorId(Long id) {
+        return persistencePort.buscarPorId(id);
+    }
 }
