@@ -9,4 +9,6 @@ public class BootcampConstants {
     public static final String CAPACIDAD_BASE_URL = "http://localhost:8081";
     public static final String CAPACIDAD_ENDPOINT = "/api/v1/capacidades/paginado?page=0&size=1&ordenarPor=nombre&direccion=asc";
     public static final String CAPACIDAD_BUSCAR_ENDPOINT = "/api/v1/capacidades/{id}";
+    public static final String REPORTE_BASE_URL = "http://localhost:8084";
+    public static final String REPORTE_ENDPOINT = "/api/v1/reportes";
 }
