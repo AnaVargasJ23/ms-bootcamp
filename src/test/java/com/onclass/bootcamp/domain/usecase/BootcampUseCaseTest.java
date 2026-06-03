@@ -6,6 +6,7 @@ import com.onclass.bootcamp.domain.model.BootcampPage;
 import com.onclass.bootcamp.domain.model.Capacidad;
 import com.onclass.bootcamp.domain.spi.IBootcampPersistencePort;
 import com.onclass.bootcamp.domain.spi.ICapacidadServicePort;
+import com.onclass.bootcamp.domain.spi.IReporteServicePort;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -20,6 +21,7 @@ import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -30,6 +32,9 @@ class BootcampUseCaseTest {
 
     @Mock
     private ICapacidadServicePort capacidadServicePort;
+
+    @Mock
+    private IReporteServicePort reporteServicePort;
 
     @InjectMocks
     private BootcampUseCase useCase;
@@ -54,6 +59,7 @@ class BootcampUseCaseTest {
         when(persistencePort.guardar(any())).thenReturn(Mono.just(
                 new Bootcamp(1L, "Bootcamp Java", "Descripción válida",
                         LocalDate.of(2026, 6, 1), 90, capacidadesValidas())));
+        doNothing().when(reporteServicePort).enviarReporte(any());
 
         StepVerifier.create(useCase.registrar(bootcamp))
                 .expectNextMatches(b -> b.getId() == 1L)
@@ -202,7 +208,6 @@ class BootcampUseCaseTest {
                 .verify();
     }
 
-
     @Test
     void listarPaginado_exitoso() {
         List<Bootcamp> bootcamps = List.of(
@@ -294,5 +299,4 @@ class BootcampUseCaseTest {
         StepVerifier.create(useCase.eliminar(1L))
                 .verifyComplete();
     }
-
 }

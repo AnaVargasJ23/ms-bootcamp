@@ -9,6 +9,7 @@ import com.onclass.bootcamp.domain.model.BootcampPage;
 import com.onclass.bootcamp.domain.model.Capacidad;
 import com.onclass.bootcamp.domain.spi.IBootcampPersistencePort;
 import com.onclass.bootcamp.domain.spi.ICapacidadServicePort;
+import com.onclass.bootcamp.domain.spi.IReporteServicePort;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -25,6 +26,7 @@ public class BootcampUseCase implements IBootcampServicePort {
 
     private final IBootcampPersistencePort persistencePort;
     private final ICapacidadServicePort capacidadServicePort;
+    private final IReporteServicePort reporteServicePort;
 
     @Override
     public Mono<Bootcamp> registrar(Bootcamp bootcamp) {
@@ -41,7 +43,12 @@ public class BootcampUseCase implements IBootcampServicePort {
                                 BootcampErrorEnum.NOMBRE_DUPLICADO.getCode(),
                                 BootcampErrorEnum.NOMBRE_DUPLICADO.getMessage()));
                     }
-                    return persistencePort.guardar(bootcamp);
+                    return persistencePort.guardar(bootcamp)
+                            .flatMap(saved -> enriquecerCapacidades(saved)
+                                    .flatMap(enriched -> {
+                                        reporteServicePort.enviarReporte(enriched);
+                                        return Mono.just(enriched);
+                                    }));
                 });
     }
 
