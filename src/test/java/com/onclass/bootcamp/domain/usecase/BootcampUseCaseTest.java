@@ -59,6 +59,8 @@ class BootcampUseCaseTest {
         when(persistencePort.guardar(any())).thenReturn(Mono.just(
                 new Bootcamp(1L, "Bootcamp Java", "Descripción válida",
                         LocalDate.of(2026, 6, 1), 90, capacidadesValidas())));
+        when(capacidadServicePort.obtenerCapacidad(anyLong()))
+                .thenReturn(Mono.just(new Capacidad(3L, "Backend Developer", null)));
         doNothing().when(reporteServicePort).enviarReporte(any());
 
         StepVerifier.create(useCase.registrar(bootcamp))

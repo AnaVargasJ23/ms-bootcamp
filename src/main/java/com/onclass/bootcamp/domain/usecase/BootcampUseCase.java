@@ -30,12 +30,8 @@ public class BootcampUseCase implements IBootcampServicePort {
 
     @Override
     public Mono<Bootcamp> registrar(Bootcamp bootcamp) {
-        try {
-            validar(bootcamp);
-        } catch (BootcampException e) {
-            return Mono.error(e);
-        }
-        return validarCapacidadesExisten(bootcamp.getCapacidades())
+        return validar(bootcamp)
+                .flatMap(b -> validarCapacidadesExisten(b.getCapacidades()))
                 .flatMap(ignored -> persistencePort.existePorNombre(bootcamp.getNombre()))
                 .flatMap(existe -> {
                     if (existe) {
@@ -94,6 +90,11 @@ public class BootcampUseCase implements IBootcampServicePort {
                 });
     }
 
+    @Override
+    public Mono<Bootcamp> buscarPorId(Long id) {
+        return persistencePort.buscarPorId(id);
+    }
+
     private Mono<List<Bootcamp>> enriquecerBootcamps(List<Bootcamp> bootcamps) {
         return Flux.fromIterable(bootcamps)
                 .concatMap(this::enriquecerCapacidades)
@@ -110,36 +111,55 @@ public class BootcampUseCase implements IBootcampServicePort {
                 });
     }
 
-    private void validar(Bootcamp bootcamp) {
+    private Mono<Bootcamp> validar(Bootcamp bootcamp) {
         if (bootcamp.getNombre() == null || bootcamp.getNombre().isBlank()) {
-            throw new BootcampException(BootcampErrorEnum.NOMBRE_OBLIGATORIO.getCode(), BootcampErrorEnum.NOMBRE_OBLIGATORIO.getMessage());
+            return Mono.error(new BootcampException(
+                    BootcampErrorEnum.NOMBRE_OBLIGATORIO.getCode(),
+                    BootcampErrorEnum.NOMBRE_OBLIGATORIO.getMessage()));
         }
         if (bootcamp.getNombre().length() > BootcampConstants.NOMBRE_MAX_LENGTH) {
-            throw new BootcampException(BootcampErrorEnum.NOMBRE_MAX_50.getCode(), BootcampErrorEnum.NOMBRE_MAX_50.getMessage());
+            return Mono.error(new BootcampException(
+                    BootcampErrorEnum.NOMBRE_MAX_50.getCode(),
+                    BootcampErrorEnum.NOMBRE_MAX_50.getMessage()));
         }
         if (bootcamp.getDescripcion() == null || bootcamp.getDescripcion().isBlank()) {
-            throw new BootcampException(BootcampErrorEnum.DESCRIPCION_OBLIGATORIA.getCode(), BootcampErrorEnum.DESCRIPCION_OBLIGATORIA.getMessage());
+            return Mono.error(new BootcampException(
+                    BootcampErrorEnum.DESCRIPCION_OBLIGATORIA.getCode(),
+                    BootcampErrorEnum.DESCRIPCION_OBLIGATORIA.getMessage()));
         }
         if (bootcamp.getDescripcion().length() > BootcampConstants.DESCRIPCION_MAX_LENGTH) {
-            throw new BootcampException(BootcampErrorEnum.DESCRIPCION_MAX_90.getCode(), BootcampErrorEnum.DESCRIPCION_MAX_90.getMessage());
+            return Mono.error(new BootcampException(
+                    BootcampErrorEnum.DESCRIPCION_MAX_90.getCode(),
+                    BootcampErrorEnum.DESCRIPCION_MAX_90.getMessage()));
         }
         if (bootcamp.getFechaLanzamiento() == null) {
-            throw new BootcampException(BootcampErrorEnum.FECHA_OBLIGATORIA.getCode(), BootcampErrorEnum.FECHA_OBLIGATORIA.getMessage());
+            return Mono.error(new BootcampException(
+                    BootcampErrorEnum.FECHA_OBLIGATORIA.getCode(),
+                    BootcampErrorEnum.FECHA_OBLIGATORIA.getMessage()));
         }
         if (bootcamp.getDuracion() == null) {
-            throw new BootcampException(BootcampErrorEnum.DURACION_OBLIGATORIA.getCode(), BootcampErrorEnum.DURACION_OBLIGATORIA.getMessage());
+            return Mono.error(new BootcampException(
+                    BootcampErrorEnum.DURACION_OBLIGATORIA.getCode(),
+                    BootcampErrorEnum.DURACION_OBLIGATORIA.getMessage()));
         }
         if (bootcamp.getCapacidades() == null || bootcamp.getCapacidades().size() < BootcampConstants.CAPACIDADES_MIN) {
-            throw new BootcampException(BootcampErrorEnum.CAPACIDADES_MIN_1.getCode(), BootcampErrorEnum.CAPACIDADES_MIN_1.getMessage());
+            return Mono.error(new BootcampException(
+                    BootcampErrorEnum.CAPACIDADES_MIN_1.getCode(),
+                    BootcampErrorEnum.CAPACIDADES_MIN_1.getMessage()));
         }
         if (bootcamp.getCapacidades().size() > BootcampConstants.CAPACIDADES_MAX) {
-            throw new BootcampException(BootcampErrorEnum.CAPACIDADES_MAX_4.getCode(), BootcampErrorEnum.CAPACIDADES_MAX_4.getMessage());
+            return Mono.error(new BootcampException(
+                    BootcampErrorEnum.CAPACIDADES_MAX_4.getCode(),
+                    BootcampErrorEnum.CAPACIDADES_MAX_4.getMessage()));
         }
         List<Long> ids = bootcamp.getCapacidades().stream().map(Capacidad::getId).toList();
         Set<Long> idsUnicos = new HashSet<>(ids);
         if (idsUnicos.size() != ids.size()) {
-            throw new BootcampException(BootcampErrorEnum.CAPACIDADES_REPETIDAS.getCode(), BootcampErrorEnum.CAPACIDADES_REPETIDAS.getMessage());
+            return Mono.error(new BootcampException(
+                    BootcampErrorEnum.CAPACIDADES_REPETIDAS.getCode(),
+                    BootcampErrorEnum.CAPACIDADES_REPETIDAS.getMessage()));
         }
+        return Mono.just(bootcamp);
     }
 
     private Mono<Boolean> validarCapacidadesExisten(List<Capacidad> capacidades) {
@@ -154,10 +174,5 @@ public class BootcampUseCase implements IBootcampServicePort {
                             return Mono.just(existe);
                         }))
                 .all(Boolean::booleanValue);
-    }
-
-    @Override
-    public Mono<Bootcamp> buscarPorId(Long id) {
-        return persistencePort.buscarPorId(id);
     }
 }
