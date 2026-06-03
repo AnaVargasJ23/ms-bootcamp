@@ -44,7 +44,11 @@ public class BootcampUseCase implements IBootcampServicePort {
                                 BootcampErrorEnum.NOMBRE_DUPLICADO.getMessage()));
                     }
                     return persistencePort.guardar(bootcamp)
-                            .doOnSuccess(saved -> reporteServicePort.enviarReporte(saved));
+                            .flatMap(saved -> enriquecerCapacidades(saved)
+                                    .flatMap(enriched -> {
+                                        reporteServicePort.enviarReporte(enriched);
+                                        return Mono.just(enriched);
+                                    }));
                 });
     }
 
